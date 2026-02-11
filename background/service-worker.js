@@ -1,11 +1,13 @@
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "activate-eyedropper") {
-    handleEyedropper();
+    handleEyedropper().then(() => sendResponse({ ok: true }));
+    return true;
   } else if (message.type === "extract-colors") {
-    handleExtractColors();
+    handleExtractColors().then(() => sendResponse({ ok: true }));
+    return true;
   } else if (message.type === "capture-screenshot") {
     handleScreenshot(sendResponse);
-    return true; // keep channel open for async response
+    return true;
   }
 });
 

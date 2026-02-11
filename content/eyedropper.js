@@ -12,10 +12,10 @@
   const CELL_SIZE = (LENS_RADIUS * 2) / GRID_SIZE;
   const HALF_GRID = Math.floor(GRID_SIZE / 2);
 
-  chrome.runtime.onMessage.addListener((message) => {
-    if (message.type === "eyedropper-init") {
-      init(message.screenshot);
-    }
+  chrome.runtime.onMessage.addListener(function listener(message) {
+    if (message.type !== "eyedropper-init") return;
+    chrome.runtime.onMessage.removeListener(listener);
+    init(message.screenshot);
   });
 
   function init(dataUrl) {
