@@ -1,0 +1,8 @@
+.__c-color-picker-active {
+  cursor: none !important;
+  overflow: hidden !important;
+}
+
+.__c-color-picker-active * {
+  cursor: none !important;
+}

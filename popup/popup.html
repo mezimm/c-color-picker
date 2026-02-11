@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="popup.css" />
+    <title>C Color Picker</title>
+  </head>
+  <body>
+    <div class="container">
+      <h1 class="title">C Color Picker</h1>
+      <div class="actions">
+        <button id="pick-color" class="btn btn-primary">Pick Color</button>
+        <button id="extract-colors" class="btn btn-secondary">
+          Extract Colors
+        </button>
+      </div>
+      <div id="colors-section" class="colors-section hidden">
+        <div class="colors-header">Dominant Colors</div>
+        <div id="colors-grid" class="colors-grid"></div>
+      </div>
+      <div id="status" class="status hidden"></div>
+    </div>
+    <script src="../lib/kmeans.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>
