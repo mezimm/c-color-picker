@@ -4,6 +4,8 @@
 
   let canvas, ctx, pixelData, imgWidth, imgHeight;
   let dpr = window.devicePixelRatio || 1;
+  let toastTimer = null;
+  let toastMessage = null;
 
   const GRID_SIZE = 11; // 11x11 pixel grid in the magnifier
   const LENS_RADIUS = 66;
@@ -72,11 +74,88 @@
     );
   }
 
+  const CLOSE_BTN_SIZE = 28;
+  const CLOSE_BTN_MARGIN = 12;
+
+  function isInCloseButton(mx, my) {
+    const vw = window.innerWidth;
+    const bx = vw - CLOSE_BTN_MARGIN - CLOSE_BTN_SIZE;
+    const by = CLOSE_BTN_MARGIN;
+    return mx >= bx && mx <= bx + CLOSE_BTN_SIZE && my >= by && my <= by + CLOSE_BTN_SIZE;
+  }
+
+  function drawCloseButton() {
+    const vw = window.innerWidth;
+    const bx = vw - CLOSE_BTN_MARGIN - CLOSE_BTN_SIZE;
+    const by = CLOSE_BTN_MARGIN;
+    const cx = bx + CLOSE_BTN_SIZE / 2;
+    const cy = by + CLOSE_BTN_SIZE / 2;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, CLOSE_BTN_SIZE / 2, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(30,30,30,0.85)";
+    ctx.shadowColor = "rgba(0,0,0,0.3)";
+    ctx.shadowBlur = 6;
+    ctx.fill();
+    ctx.restore();
+
+    // X icon
+    const arm = 6;
+    ctx.save();
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(cx - arm, cy - arm);
+    ctx.lineTo(cx + arm, cy + arm);
+    ctx.moveTo(cx + arm, cy - arm);
+    ctx.lineTo(cx - arm, cy + arm);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawToast() {
+    if (!toastMessage) return;
+    const vw = window.innerWidth;
+    const toastW = 160;
+    const toastH = 34;
+    const tx = (vw - toastW) / 2;
+    const ty = 16;
+
+    ctx.save();
+    ctx.beginPath();
+    roundRect(ctx, tx, ty, toastW, toastH, 8);
+    ctx.fillStyle = "rgba(30,30,30,0.92)";
+    ctx.shadowColor = "rgba(0,0,0,0.3)";
+    ctx.shadowBlur = 8;
+    ctx.fill();
+    ctx.restore();
+
+    // Swatch
+    const swatchSize = 16;
+    const swatchX = tx + 12;
+    const swatchY = ty + (toastH - swatchSize) / 2;
+    ctx.fillStyle = toastMessage.cssColor;
+    ctx.beginPath();
+    roundRect(ctx, swatchX, swatchY, swatchSize, swatchSize, 3);
+    ctx.fill();
+
+    // Text
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 12px -apple-system, system-ui, sans-serif";
+    ctx.textBaseline = "middle";
+    ctx.fillText(`${toastMessage.hex} copied`, swatchX + swatchSize + 8, ty + toastH / 2);
+  }
+
   function onMouseMove(e) {
     const mx = e.clientX;
     const my = e.clientY;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
+
+    // Change cursor when hovering the close button
+    canvas.style.cursor = isInCloseButton(mx, my) ? "pointer" : "none";
 
     ctx.clearRect(0, 0, vw, vh);
 
@@ -105,6 +184,8 @@
 
     drawMagnifier(lx, ly, sx, sy);
     drawPreview(lx, previewY, hex, centerColor);
+    drawCloseButton();
+    drawToast();
   }
 
   function drawMagnifier(cx, cy, sx, sy) {
@@ -216,13 +297,26 @@
   }
 
   function onClick(e) {
+    // Close button click
+    if (isInCloseButton(e.clientX, e.clientY)) {
+      cleanup();
+      return;
+    }
+
     const sx = Math.round(e.clientX * dpr);
     const sy = Math.round(e.clientY * dpr);
     const color = getPixel(sx, sy);
     const hex = rgbToHex(color.r, color.g, color.b);
 
     copyToClipboard(hex);
-    showToast(hex, color);
+
+    // Show inline toast briefly, then clear it
+    if (toastTimer) clearTimeout(toastTimer);
+    toastMessage = { hex, cssColor: `rgb(${color.r},${color.g},${color.b})` };
+    toastTimer = setTimeout(() => {
+      toastMessage = null;
+      toastTimer = null;
+    }, 1500);
   }
 
   async function copyToClipboard(text) {
@@ -237,50 +331,6 @@
       document.execCommand("copy");
       textarea.remove();
     }
-  }
-
-  function showToast(hex, color) {
-    // Remove event listeners immediately
-    canvas.removeEventListener("mousemove", onMouseMove);
-    canvas.removeEventListener("click", onClick);
-    document.removeEventListener("keydown", onKeyDown);
-
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-
-    ctx.clearRect(0, 0, vw, vh);
-
-    // Toast background
-    const toastW = 180;
-    const toastH = 48;
-    const tx = (vw - toastW) / 2;
-    const ty = (vh - toastH) / 2;
-
-    ctx.save();
-    ctx.beginPath();
-    roundRect(ctx, tx, ty, toastW, toastH, 10);
-    ctx.fillStyle = "rgba(30,30,30,0.95)";
-    ctx.shadowColor = "rgba(0,0,0,0.4)";
-    ctx.shadowBlur = 16;
-    ctx.fill();
-    ctx.restore();
-
-    // Swatch
-    const swatchSize = 22;
-    const swatchX = tx + 14;
-    const swatchY = ty + (toastH - swatchSize) / 2;
-    ctx.fillStyle = `rgb(${color.r},${color.g},${color.b})`;
-    ctx.beginPath();
-    roundRect(ctx, swatchX, swatchY, swatchSize, swatchSize, 4);
-    ctx.fill();
-
-    // Text
-    ctx.fillStyle = "#fff";
-    ctx.font = "bold 14px -apple-system, system-ui, sans-serif";
-    ctx.textBaseline = "middle";
-    ctx.fillText(`${hex} copied!`, swatchX + swatchSize + 10, ty + toastH / 2);
-
-    setTimeout(cleanup, 800);
   }
 
   function onKeyDown(e) {
@@ -304,6 +354,9 @@
     }
     document.body.classList.remove("__c-color-picker-active");
 
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = null;
+    toastMessage = null;
     canvas = null;
     ctx = null;
     pixelData = null;
