@@ -90,18 +90,21 @@
     const centerColor = getPixel(sx, sy);
     const hex = rgbToHex(centerColor.r, centerColor.g, centerColor.b);
 
-    // Lens position — clamp to viewport edges
+    // Lens position — clamp so the circle stays in viewport
     const previewHeight = 36;
     const gap = 12;
-    const totalHeight = LENS_RADIUS * 2 + gap + previewHeight;
     let lx = Math.max(LENS_RADIUS + 4, Math.min(mx, vw - LENS_RADIUS - 4));
-    let ly = Math.max(
-      LENS_RADIUS + 4,
-      Math.min(my, vh - totalHeight - 4)
-    );
+    let ly = Math.max(LENS_RADIUS + 4, Math.min(my, vh - LENS_RADIUS - 4));
+
+    // Flip preview above the lens when too close to the bottom
+    const spaceBelow = vh - (ly + LENS_RADIUS);
+    const previewY =
+      spaceBelow >= gap + previewHeight + 4
+        ? ly + LENS_RADIUS + gap
+        : ly - LENS_RADIUS - gap - previewHeight;
 
     drawMagnifier(lx, ly, sx, sy);
-    drawPreview(lx, ly + LENS_RADIUS + gap, hex, centerColor);
+    drawPreview(lx, previewY, hex, centerColor);
   }
 
   function drawMagnifier(cx, cy, sx, sy) {
