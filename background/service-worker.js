@@ -1,6 +1,8 @@
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "activate-eyedropper") {
     handleEyedropper();
+  } else if (message.type === "extract-colors") {
+    handleExtractColors();
   } else if (message.type === "capture-screenshot") {
     handleScreenshot(sendResponse);
     return true; // keep channel open for async response
@@ -32,6 +34,34 @@ async function handleEyedropper() {
     });
   } catch (err) {
     console.warn("C Color Picker: cannot activate on this page —", err.message);
+  }
+}
+
+async function handleExtractColors() {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab) return;
+
+    const dataUrl = await chrome.tabs.captureVisibleTab(null, {
+      format: "png",
+    });
+
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      files: ["lib/kmeans.js"],
+    });
+
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      files: ["content/color-grid.js"],
+    });
+
+    chrome.tabs.sendMessage(tab.id, {
+      type: "color-grid-init",
+      screenshot: dataUrl,
+    });
+  } catch (err) {
+    console.warn("C Color Picker: cannot extract colors on this page —", err.message);
   }
 }
 
