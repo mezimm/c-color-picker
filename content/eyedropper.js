@@ -6,6 +6,8 @@
   let dpr = window.devicePixelRatio || 1;
   let toastTimer = null;
   let toastMessage = null;
+  let cursorX = null;
+  let cursorY = null;
 
   const GRID_SIZE = 11; // 11x11 pixel grid in the magnifier
   const LENS_RADIUS = 66;
@@ -73,6 +75,13 @@
       ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1).toUpperCase()
     );
   }
+
+  const ARROW_DELTAS = {
+    ArrowUp: [0, -1],
+    ArrowDown: [0, 1],
+    ArrowLeft: [-1, 0],
+    ArrowRight: [1, 0],
+  };
 
   const CLOSE_BTN_SIZE = 28;
   const CLOSE_BTN_MARGIN = 12;
@@ -148,14 +157,13 @@
     ctx.fillText(`${toastMessage.hex} copied`, swatchX + swatchSize + 8, ty + toastH / 2);
   }
 
-  function onMouseMove(e) {
-    const mx = e.clientX;
-    const my = e.clientY;
+  function redraw() {
+    if (cursorX === null || cursorY === null) return;
+
+    const mx = cursorX;
+    const my = cursorY;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-
-    // Change cursor when hovering the close button
-    canvas.style.cursor = isInCloseButton(mx, my) ? "pointer" : "none";
 
     ctx.clearRect(0, 0, vw, vh);
 
@@ -186,6 +194,13 @@
     drawPreview(lx, previewY, hex, centerColor);
     drawCloseButton();
     drawToast();
+  }
+
+  function onMouseMove(e) {
+    cursorX = e.clientX;
+    cursorY = e.clientY;
+    canvas.style.cursor = isInCloseButton(cursorX, cursorY) ? "pointer" : "none";
+    redraw();
   }
 
   function drawMagnifier(cx, cy, sx, sy) {
@@ -296,27 +311,36 @@
     ctx.closePath();
   }
 
-  function onClick(e) {
-    // Close button click
-    if (isInCloseButton(e.clientX, e.clientY)) {
-      cleanup();
-      return;
-    }
+  function pickColor() {
+    if (cursorX === null || cursorY === null) return;
 
-    const sx = Math.round(e.clientX * dpr);
-    const sy = Math.round(e.clientY * dpr);
+    const sx = Math.round(cursorX * dpr);
+    const sy = Math.round(cursorY * dpr);
     const color = getPixel(sx, sy);
     const hex = rgbToHex(color.r, color.g, color.b);
 
     copyToClipboard(hex);
 
-    // Show inline toast briefly, then clear it
     if (toastTimer) clearTimeout(toastTimer);
     toastMessage = { hex, cssColor: `rgb(${color.r},${color.g},${color.b})` };
+    redraw();
     toastTimer = setTimeout(() => {
       toastMessage = null;
       toastTimer = null;
+      redraw();
     }, 1500);
+  }
+
+  function onClick(e) {
+    cursorX = e.clientX;
+    cursorY = e.clientY;
+
+    if (isInCloseButton(cursorX, cursorY)) {
+      cleanup();
+      return;
+    }
+
+    pickColor();
   }
 
   async function copyToClipboard(text) {
@@ -338,6 +362,29 @@
       e.preventDefault();
       e.stopPropagation();
       cleanup();
+      return;
+    }
+
+    // Arrow key navigation
+    if (ARROW_DELTAS[e.key]) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (cursorX === null || cursorY === null) return;
+
+      const step = e.shiftKey ? 10 : 1;
+      const [dx, dy] = ARROW_DELTAS[e.key];
+      cursorX = Math.max(0, Math.min(cursorX + dx * step, window.innerWidth - 1));
+      cursorY = Math.max(0, Math.min(cursorY + dy * step, window.innerHeight - 1));
+      canvas.style.cursor = "none";
+      redraw();
+      return;
+    }
+
+    // Enter/Space to pick color
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      e.stopPropagation();
+      pickColor();
     }
   }
 
@@ -360,6 +407,8 @@
     canvas = null;
     ctx = null;
     pixelData = null;
+    cursorX = null;
+    cursorY = null;
     window.__cColorPickerActive = false;
   }
 })();
