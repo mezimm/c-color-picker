@@ -2,6 +2,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "activate-eyedropper") {
     handleEyedropper().then(() => sendResponse({ ok: true }));
     return true;
+  } else if (message.type === "activate-eyedropper-delayed") {
+    handleDelayedEyedropper().then(() => sendResponse({ ok: true }));
+    return true;
   } else if (message.type === "extract-colors") {
     handleExtractColors().then(() => sendResponse({ ok: true }));
     return true;
@@ -36,6 +39,25 @@ async function handleEyedropper() {
     });
   } catch (err) {
     console.warn("C Color Picker: cannot activate on this page —", err.message);
+  }
+}
+
+async function handleDelayedEyedropper() {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab) return;
+
+    await chrome.scripting.insertCSS({
+      target: { tabId: tab.id },
+      files: ["content/countdown.css"],
+    });
+
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      files: ["content/countdown.js"],
+    });
+  } catch (err) {
+    console.warn("C Color Picker: cannot start countdown —", err.message);
   }
 }
 

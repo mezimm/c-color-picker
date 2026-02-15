@@ -7,3 +7,8 @@ document.getElementById("extract-colors").addEventListener("click", async () => 
   await chrome.runtime.sendMessage({ type: "extract-colors" });
   window.close();
 });
+
+document.getElementById("pick-color-delayed").addEventListener("click", async () => {
+  await chrome.runtime.sendMessage({ type: "activate-eyedropper-delayed" });
+  window.close();
+});

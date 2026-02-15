@@ -1,0 +1,17 @@
+.__c-color-picker-countdown {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2147483647;
+  background: rgba(30, 30, 30, 0.9);
+  color: #fff;
+  font-family: -apple-system, system-ui, "Segoe UI", sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  padding: 10px 24px;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  user-select: none;
+}
