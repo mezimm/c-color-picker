@@ -2,7 +2,7 @@
   if (window.__cColorPickerActive) return;
   window.__cColorPickerActive = true;
 
-  let canvas, ctx, pixelData, imgWidth, imgHeight;
+  let canvas, ctx, pixelData, imgWidth, imgHeight, screenshotImg;
   let dpr = window.devicePixelRatio || 1;
   let toastTimer = null;
   let toastMessage = null;
@@ -34,6 +34,7 @@
         const offCtx = offscreen.getContext("2d");
         offCtx.drawImage(img, 0, 0);
         pixelData = offCtx.getImageData(0, 0, imgWidth, imgHeight).data;
+        screenshotImg = img;
 
         createOverlay();
       } catch {
@@ -166,6 +167,7 @@
     const vh = window.innerHeight;
 
     ctx.clearRect(0, 0, vw, vh);
+    ctx.drawImage(screenshotImg, 0, 0, vw, vh);
 
     // Screenshot pixel under cursor
     const sx = Math.round(mx * dpr);
@@ -403,6 +405,7 @@
     canvas = null;
     ctx = null;
     pixelData = null;
+    screenshotImg = null;
     cursorX = null;
     cursorY = null;
     window.__cColorPickerActive = false;
