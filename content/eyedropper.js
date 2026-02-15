@@ -167,10 +167,6 @@
 
     ctx.clearRect(0, 0, vw, vh);
 
-    // Dark overlay tint
-    ctx.fillStyle = "rgba(0,0,0,0.15)";
-    ctx.fillRect(0, 0, vw, vh);
-
     // Screenshot pixel under cursor
     const sx = Math.round(mx * dpr);
     const sy = Math.round(my * dpr);
